@@ -14,7 +14,8 @@ public class SubjectImpl implements Subject {
     
     private final Map<String, Set<String>> groupInvited = new ConcurrentHashMap<>();  // Usuarios invitados
     private final Map<String, Set<String>> groupActive = new ConcurrentHashMap<>();   // Usuarios que aceptaron
-    
+     private final Map<String, Set<String>> groupMembers = new ConcurrentHashMap<>();
+
     private final Map<String, Boolean> activeGroups = new ConcurrentHashMap<>();
     private final ScheduledExecutorService cleaner = Executors.newSingleThreadScheduledExecutor();
     private final long STALE_MS = 300_000;
@@ -368,24 +369,21 @@ public class SubjectImpl implements Subject {
     public void sendAudioMessageGroup(String fromUser, String groupId, byte[] data, Current current) {
         if (groupId == null || fromUser == null || data == null || data.length == 0) return;
 
-        Set<String> active = groupActive.get(groupId);
-        if (active == null || active.isEmpty()) {
-            System.err.println("[SERVER] Grupo sin miembros activos: " + groupId);
+        Set<String> members = groupMembers.get(groupId);
+        if (members == null || members.isEmpty()) {
+            System.err.println("[SERVER] Grupo vacio: " + groupId);
             return;
         }
 
-        String[] snapshot = active.toArray(new String[0]);
+        String[] snapshot = members.toArray(new String[0]);
         for (String member : snapshot) {
             if (member.equals(fromUser)) continue;
             
             ObserverPrx prx = observers.get(member);
             if (prx != null) {
                 try {
-                    prx.receiveAudioMessageGroupAsync(groupId, data).whenComplete((result, ex) -> {
-                        if (ex != null) {
-                            System.err.println("[SERVER] Error enviando mensaje de audio grupal a " + member + ": " + ex.getMessage());
-                        }
-                    });
+                    // ✅ CRÍTICO: Usar método asíncrono para evitar bloqueos
+                    prx.receiveAudioMessageGroupAsync(groupId, data);
                 } catch (Exception ex) {
                     System.err.println("[SERVER] Error enviando mensaje de audio grupal a " + member);
                 }
@@ -485,4 +483,54 @@ public class SubjectImpl implements Subject {
         groupInvited.clear();
         activeGroups.clear();
     }
+
+      @Override
+    public void joinMessagingGroup(String groupId, String[] users, Current current) {
+        if (groupId == null || users == null) {
+            throw new IllegalArgumentException("groupId/users no pueden ser null");
+        }
+
+        groupMembers.putIfAbsent(groupId, ConcurrentHashMap.newKeySet());
+        Set<String> members = groupMembers.get(groupId);
+
+        for (String u : users) {
+            if (u != null && !u.trim().isEmpty()) {
+                members.add(u);
+            }
+        }
+
+        System.out.println("[SERVER] 💬 Usuarios añadidos al grupo " 
+                            + groupId + ": " + members.size() + " miembros");
+
+        String[] arr = members.toArray(new String[0]);
+
+        // ✅ CRÍTICO: Usar método correcto según tu interfaz Observer
+        // Si no existe groupUsersUpdatedAsync, usa groupCallUpdatedAsync
+        for (String member : arr) {
+            ObserverPrx prx = observers.get(member);
+            if (prx != null) {
+                try {
+                    prx.groupUsersUpdatedAsync(groupId, arr);
+                } catch (Exception ex) {
+                    System.err.println("[SERVER] Error notificando groupUsersUpdated a " + member);
+                }
+
+            }
+        }
+    }
+    private void notifyGroupUsersUpdated(String groupId, Set<String> members) {
+    String[] arr = members.toArray(new String[0]);
+
+    for (String member : arr) {
+        ObserverPrx prx = observers.get(member);
+        if (prx != null) {
+            try {
+                prx.groupUsersUpdatedAsync(groupId, arr);
+            } catch (Exception ex) {
+                System.err.println("[SERVER] Error notificando groupUsersUpdated a " + member);
+            }
+        }
+    }
+}
+
 }

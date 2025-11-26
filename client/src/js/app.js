@@ -290,7 +290,7 @@ const AppController = {
     }
   },
 
- async handleStopRecording() {
+async handleStopRecording() {
     if (!this.isRecordingAudioMessage) return
 
     clearInterval(this.recordingInterval)
@@ -352,10 +352,35 @@ const AppController = {
           return
         }
 
-        const iceGroupId = `group_${group.id}`
-        
+        const memberIds = group.memberIds || group.members || [];
+        const memberUsernames = memberIds
+        .map(memberId => {
+          // Normalizar ID (puede venir como objeto o número)
+          const id = typeof memberId === 'object' ? memberId.id : memberId;
+          
+          console.log(`🔍 Buscando miembro con ID: ${id}`);
+          const user = window.UI.allUsers.find(u => u.id === id);
+          
+          if (!user) {
+            console.warn(`⚠️ Usuario no encontrado con ID: ${id}`);
+          }
+          
+          return user?.username || null;
+        })
+        .filter(u => u !== null);
+
+        const iceGroupId = `group_${group.id}`;
+        const joined = await window.IceDelegate.joinMessagingGroup(iceGroupId, memberUsernames);
+        if (!joined) {
+          alert("No se pudo crear/acceder al grupo ICE");
+          return;
+        }
+
         // 1. Enviar audio por ICE (en tiempo real)
-        success = await window.IceDelegate.sendAudioMessageGroup(iceGroupId, audioData.pcm16)
+        success = await window.IceDelegate.sendAudioMessageGroup(
+        iceGroupId,
+        audioData.pcm16
+         );
         console.log("✅ Mensaje de audio grupal enviado por ICE a:", iceGroupId)
 
         // 2. NUEVO: Guardar en backend para persistencia

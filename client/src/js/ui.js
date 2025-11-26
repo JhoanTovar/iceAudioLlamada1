@@ -416,87 +416,70 @@ const UI = {
   },
 
   appendMessage(message, currentUserId) {
-    console.log("[v0] appendMessage called with:", { message, currentUserId })
+  console.log(" appendMessage called with:", { message, currentUserId })
 
-    const isSent = message.senderId === currentUserId
-    const messageDiv = document.createElement("div")
-    messageDiv.className = `message ${isSent ? "sent" : "received"}`
+  const isSent = message.senderId === currentUserId
+  const messageDiv = document.createElement("div")
+  messageDiv.className = `message ${isSent ? "sent" : "received"}`
 
-    // Usar startTime para llamadas, timestamp para mensajes
-    const timeValue = message.timestamp || message.startTime
-    const time = timeValue
-      ? new Date(timeValue).toLocaleTimeString("es-ES", {
-          hour: "2-digit",
-          minute: "2-digit",
-        })
-      : "Sin hora"
+  const timeValue = message.timestamp || message.startTime
+  const time = timeValue
+    ? new Date(timeValue).toLocaleTimeString("es-ES", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "Sin hora"
 
-    let senderHtml = ""
-    if (!isSent && this.currentChatType === "group") {
-      senderHtml = `<div class="message-sender">${message.senderUsername || "Usuario"}</div>`
-    }
+  let senderHtml = ""
+  if (!isSent && this.currentChatType === "group") {
+    senderHtml = `<div class="message-sender">${message.senderUsername || "Usuario"}</div>`
+  }
 
-    let contentHtml = ""
+  let contentHtml = ""
 
-    if (message.type === "AUDIO" || message.type === "audio") {
-      const timestamp = timeValue
-        ? new Date(timeValue).toLocaleString("es-ES", {
-            hour: "2-digit",
-            minute: "2-digit",
-            day: "2-digit",
-            month: "2-digit",
-          })
-        : ""
-      contentHtml = `
-        <div class="audio-message" style="display: flex; align-items: center; gap: 8px; padding: 8px; background: ${isSent ? '#dcf8c6' : '#fff'}; border-radius: 8px;">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-            <line x1="12" y1="19" x2="12" y2="23"></line>
-            <line x1="8" y1="23" x2="16" y2="23"></line>
-          </svg>
-          <span style="font-size: 14px;">🎤 Mensaje de voz</span>
-        </div>
-      `
-    } else if (message.type === "CALL" || message.type === "call") {
-      const timestamp = timeValue
-        ? new Date(timeValue).toLocaleString("es-ES", {
-            hour: "2-digit",
-            minute: "2-digit",
-            day: "2-digit",
-            month: "2-digit",
-          })
-        : ""
-      const callStatus = message.status || "finalizada"
-      const duration = message.durationSeconds 
-        ? `${Math.floor(message.durationSeconds / 60)}:${(message.durationSeconds % 60).toString().padStart(2, '0')}`
-        : "0:00"
-      
-      contentHtml = `
-        <div class="call-message" style="display: flex; align-items: center; gap: 8px; padding: 12px; background: ${isSent ? '#e3f2fd' : '#f5f5f5'}; border-radius: 8px; border-left: 3px solid #2196f3;">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2196f3" stroke-width="2">
-            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-          </svg>
-          <div style="display: flex; flex-direction: column;">
-            <span style="font-weight: 600; color: #2196f3;">📞 Llamada ${callStatus}</span>
-            <span style="font-size: 12px; color: #666;">Duración: ${duration}</span>
-          </div>
-        </div>
-      `
-    } else {
-      contentHtml = `
-        <div class="message-content" style="padding: 8px 12px; background: ${isSent ? '#dcf8c6' : '#fff'}; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">${this.escapeHtml(message.content || "")}</div>
-      `
-    }
-
-    messageDiv.innerHTML = `
-      ${senderHtml}
-      ${contentHtml}
-      <div class="message-time" style="font-size: 11px; color: #999; margin-top: 4px;">${time}</div>
+  if (message.type === "AUDIO" || message.type === "audio") {
+    contentHtml = `
+      <div class="audio-message">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+          <line x1="12" y1="19" x2="12" y2="23"></line>
+          <line x1="8" y1="23" x2="16" y2="23"></line>
+        </svg>
+        <span class="audio-message-text">🎤 Mensaje de voz</span>
+      </div>
     `
+  } else if (message.type === "CALL" || message.type === "call") {
+    const callStatus = message.status || "finalizada"
+    const duration = message.durationSeconds 
+      ? `${Math.floor(message.durationSeconds / 60)}:${(message.durationSeconds % 60).toString().padStart(2, '0')}`
+      : "0:00"
+    
+    contentHtml = `
+      <div class="call-message">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2196f3" stroke-width="2">
+          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+        </svg>
+        <div class="call-message-info">
+          <span class="call-message-title"> Llamada ${callStatus}</span>
+          <span class="call-message-duration">Duración: ${duration}</span>
+        </div>
+      </div>
+    `
+  } else {
+    contentHtml = `
+      <div class="message-content">${this.escapeHtml(message.content || "")}</div>
+    `
+  }
 
-    this.messagesContainer.appendChild(messageDiv)
-  },
+  messageDiv.innerHTML = `
+    ${senderHtml}
+    ${contentHtml}
+    <div class="message-time">${time}</div>
+  `
+
+  this.messagesContainer.appendChild(messageDiv)
+},
 
   // NUEVO: Agregar mensaje de audio en tiempo real
   appendAudioMessage(message, currentUserId) {

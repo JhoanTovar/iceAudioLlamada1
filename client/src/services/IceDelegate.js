@@ -1,3 +1,5 @@
+import Subscriber from "./subscriber.js";
+
 // ===================== IceDelegate.js (COMPLETO Y CORREGIDO) =====================
 
 class IceDelegate {
@@ -13,7 +15,7 @@ class IceDelegate {
     // callbacks de audio
     this.callbacks = [];
     this.groupCallbacks = new Map(); // groupId → callbacks[]
-
+        this.groupUsersUpdatedCB = null;
     // callbacks de llamadas
     this.incomingCallCB = null;
     this.callAcceptedCB = null;
@@ -82,6 +84,39 @@ class IceDelegate {
     }
   }
 
+  // ============================================================
+  // HEARTBEAT + RECONEXIÓN
+  // ============================================================
+  startHeartbeat() {
+    this.heartbeatInterval = setInterval(async () => {
+      if (!this.subject) {
+        console.warn("⚠️ Conexión ICE perdida");
+        this.reconnect();
+        return;
+      }
+
+      try {
+        await this.subject.ice_ping();
+      } catch (error) {
+        console.error("❌ Heartbeat falló:", error);
+        this.reconnect();
+      }
+    }, 5000);
+  }
+
+  async reconnect() {
+    console.log("🔄 Intentando reconectar...");
+    clearInterval(this.heartbeatInterval);
+
+    this.isInitialized = false;
+    this.subject = null;
+
+    const ok = await this.init(this.name);
+    if (ok) {
+      console.log("✅ Reconexión exitosa");
+      if (window.AppController) window.AppController.setupICECallbacks();
+    }
+  }
   // ============================================================
   // USUARIOS
   // ============================================================
@@ -277,26 +312,43 @@ class IceDelegate {
   }
 
   async sendAudioMessageGroup(groupId, byteArray) {
-    if (!this.subject) {
-      console.error("❌ No hay subject");
-      return false;
-    }
+    if (!this.subject) return false;
     try {
       const data = Uint8Array.from(byteArray);
-      console.log(`[ICE] 📨 Enviando mensaje de audio grupal a: ${groupId}, bytes: ${data.length}`);
       await this.subject.sendAudioMessageGroup(this.name, groupId, data);
       return true;
-    } catch (error) {
-      console.error("❌ Error enviando mensaje de audio grupal:", error);
+    } catch (e) {
+      console.error("Error sendAudioMessageGroup:", e);
       return false;
     }
   }
 
+  
+  async joinMessagingGroup(groupId, members) {
+    if (!this.subject) return false;
+    try {
+      await this.subject.joinMessagingGroup(groupId, members);
+      return true;
+    } catch (e) {
+      console.error("Error joinMessagingGroup:", e);
+      return false;
+    }
+  }
   // ============================================================
   // SUBSCRIPCIÓN DE AUDIO
   // ============================================================
+   onGroupUsersUpdated(cb) { this.groupUsersUpdatedCB = cb; }
+
+  notifyGroupUsersUpdated(groupId, members) {
+    this.groupUsersUpdatedCB?.(groupId, members);
+}
+
   subscribe(cb) {
     this.callbacks.push(cb);
+  }
+
+  notify(bytes) {
+    this.callbacks.forEach((cb) => cb(bytes));
   }
 
   subscribeGroup(groupId, cb) {
@@ -305,35 +357,16 @@ class IceDelegate {
     this.groupCallbacks.get(groupId).push(cb);
   }
 
-  notify(bytes) {
-    this.callbacks.forEach(cb => cb(bytes));
+  notifyGroupMessage(groupId, bytes) {
+    if (this.groupCallbacks.has(groupId)) {
+      this.groupCallbacks.get(groupId).forEach((cb) => cb(bytes));
+    }
+
+    if (window.AudioManager?.playAudio) {
+      window.AudioManager.playAudio(bytes);
+    }
   }
 
-  notifyGroupMessage(groupId, bytes) {
-  console.log(`🎯 [DEBUG] NOTIFY_GROUP_MESSAGE EJECUTADO`);
-  console.log(`🎯 [DEBUG] Grupo: ${groupId}, Bytes: ${bytes.length}`);
-  console.log(`🎯 [DEBUG] AudioManager disponible: ${!!window.AudioManager}`);
-  console.log(`🎯 [DEBUG] playAudio disponible: ${!!(window.AudioManager && window.AudioManager.playAudio)}`);
-  
-  // 1. Notificar a suscriptores específicos del grupo
-  if (this.groupCallbacks.has(groupId)) {
-    console.log(`🎯 [DEBUG] Hay ${this.groupCallbacks.get(groupId).length} suscriptores para este grupo`);
-    this.groupCallbacks.get(groupId).forEach(cb => cb(bytes));
-  }
-  
-  // 2. Reproducir siempre
-  if (window.AudioManager && typeof window.AudioManager.playAudio === 'function') {
-    console.log(`🎯 [DEBUG] LLAMANDO A AudioManager.playAudio()`);
-    try {
-      window.AudioManager.playAudio(bytes);
-      console.log(`✅ [DEBUG] AudioManager.playAudio() ejecutado exitosamente`);
-    } catch (error) {
-      console.error(`❌ [DEBUG] Error en playAudio:`, error);
-    }
-  } else {
-    console.error(`❌ [DEBUG] AudioManager NO disponible para reproducir`);
-  }
-}
 
   // ============================================================
   // CALLBACKS DE LLAMADAS
@@ -390,67 +423,3 @@ if (typeof window !== "undefined") {
 } else {
   console.error("❌ Window no está definido");
 }
-
-// ===================== Subscriber.js =====================
-
-class Subscriber extends Demo.Observer {
-  constructor(delegate) {
-    super();
-    this.delegate = delegate;
-  }
-
-  // =================== AUDIO ===================
-  receiveAudio(bytes) {
-    console.log("[WEB] 🔊 Audio recibido:", bytes.length);
-    this.delegate.notify(Uint8Array.from(bytes));
-  }
-
-  receiveAudioMessage(bytes) {
-    console.log("[WEB] 📨 Mensaje de audio recibido:", bytes.length);
-    this.delegate.notify(Uint8Array.from(bytes));
-  }
-
-  receiveAudioMessageGroup(groupId, bytes) {
-    console.log(`[WEB] 📨 Audio de mensaje grupal recibido en ${groupId} (${bytes.length})`);
-    this.delegate.notifyGroupMessage(groupId, Uint8Array.from(bytes));
-  }
-
-  // =================== LLAMADAS 1 a 1 ===================
-  incomingCall(fromUser) {
-    console.log("[WEB] 📞 incomingCall:", fromUser);
-    this.delegate.notifyIncomingCall(fromUser);
-  }
-
-  callAccepted(fromUser) {
-    console.log("[WEB] ✅ callAccepted:", fromUser);
-    this.delegate.notifyCallAccepted(fromUser);
-  }
-
-  callRejected(fromUser) {
-    console.log("[WEB] ❌ callRejected:", fromUser);
-    this.delegate.notifyCallRejected(fromUser);
-  }
-
-  callColgada(fromUser) {
-    console.log("[WEB] 📴 callColgada:", fromUser);
-    this.delegate.notifyCallColgada(fromUser);
-  }
-
-  // =================== LLAMADAS GRUPALES ===================
-  incomingGroupCall(groupId, fromUser, members) {
-    console.log(`[WEB] 📢 incomingGroupCall (${groupId}) de ${fromUser}`);
-    this.delegate.notifyIncomingGroupCall(groupId, fromUser, members);
-  }
-
-  groupCallUpdated(groupId, members) {
-    console.log(`[WEB] 🔄 groupCallUpdated (${groupId})`);
-    this.delegate.notifyGroupCallUpdated(groupId, members);
-  }
-
-  groupCallEnded(groupId) {
-    console.log(`[WEB] 🛑 groupCallEnded (${groupId})`);
-    this.delegate.notifyGroupCallEnded(groupId);
-  }
-}
-
-export default Subscriber;
