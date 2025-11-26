@@ -11,7 +11,11 @@ public class SubjectImpl implements Subject {
     private final Map<String, ObserverPrx> observers = new ConcurrentHashMap<>();
     private final Map<String, Long> lastSeen = new ConcurrentHashMap<>();
     private final Map<String, String> activeCalls = new ConcurrentHashMap<>();
-    private final Map<String, Set<String>> groupMembers = new ConcurrentHashMap<>();
+    
+    private final Map<String, Set<String>> groupInvited = new ConcurrentHashMap<>();  // Usuarios invitados
+    private final Map<String, Set<String>> groupActive = new ConcurrentHashMap<>();   // Usuarios que aceptaron
+    
+    private final Map<String, Boolean> activeGroups = new ConcurrentHashMap<>();
     private final ScheduledExecutorService cleaner = Executors.newSingleThreadScheduledExecutor();
     private final long STALE_MS = 300_000;
     private final AtomicLong idGen = new AtomicLong(System.currentTimeMillis());
@@ -221,61 +225,101 @@ public class SubjectImpl implements Subject {
         }
 
         String groupId = "group-" + idGen.incrementAndGet();
-        Set<String> members = ConcurrentHashMap.newKeySet();
-
-        members.add(fromUser);
+        
+        Set<String> invited = ConcurrentHashMap.newKeySet();
         for (String u : users) {
-            if (u != null && !u.trim().isEmpty()) members.add(u);
+            if (u != null && !u.trim().isEmpty() && !u.equals(fromUser)) {
+                invited.add(u);
+            }
         }
+        groupInvited.put(groupId, invited);
+        
+        Set<String> active = ConcurrentHashMap.newKeySet();
+        active.add(fromUser);
+        groupActive.put(groupId, active);
+        
+        activeGroups.put(groupId, true);
 
-        groupMembers.put(groupId, members);
-
-        String[] arr = members.toArray(new String[0]);
-        for (String member : arr) {
-            ObserverPrx prx = observers.get(member);
+        String[] allMembers = getAllGroupMembers(groupId);
+        for (String invitee : invited) {
+            ObserverPrx prx = observers.get(invitee);
             if (prx != null) {
                 try {
-                    prx.incomingGroupCallAsync(groupId, fromUser, arr);
+                    prx.incomingGroupCallAsync(groupId, fromUser, allMembers);
+                    System.out.println("[SERVER] Notificacion enviada a " + invitee);
                 } catch (Exception ex) {
-                    System.err.println("[SERVER] Error notificando incomingGroupCall a " + member);
+                    System.err.println("[SERVER] Error notificando incomingGroupCall a " + invitee);
                 }
             }
         }
 
-        System.out.println("[SERVER] Grupo creado: " + groupId + " por " + fromUser + " con " + members.size() + " miembros");
+        System.out.println("[SERVER] Grupo creado: " + groupId + " por " + fromUser + 
+                          " | Activos: " + active.size() + " | Invitados: " + invited.size());
         return groupId;
+    }
+
+    private String[] getAllGroupMembers(String groupId) {
+        Set<String> all = new HashSet<>();
+        Set<String> active = groupActive.get(groupId);
+        Set<String> invited = groupInvited.get(groupId);
+        if (active != null) all.addAll(active);
+        if (invited != null) all.addAll(invited);
+        return all.toArray(new String[0]);
     }
 
     @Override
     public void joinGroupCall(String groupId, String user, Current current) {
         if (groupId == null || user == null) return;
 
-        Set<String> members = groupMembers.get(groupId);
-        if (members == null) {
+        Set<String> active = groupActive.get(groupId);
+        Set<String> invited = groupInvited.get(groupId);
+        
+        if (active == null) {
             System.err.println("[SERVER] Grupo no existe: " + groupId);
             return;
         }
 
-        members.add(user);
+        if (invited != null) {
+            invited.remove(user);
+        }
+        active.add(user);
+        
         notifyGroupUpdated(groupId);
-        System.out.println("[SERVER] " + user + " se unio a " + groupId);
+        System.out.println("[SERVER] " + user + " se unio activamente a " + groupId + 
+                          " | Activos: " + active.size());
     }
 
     @Override
     public void leaveGroupCall(String groupId, String user, Current current) {
         if (groupId == null || user == null) return;
 
-        Set<String> members = groupMembers.get(groupId);
-        if (members == null) return;
-
-        members.remove(user);
+        Set<String> active = groupActive.get(groupId);
+        Set<String> invited = groupInvited.get(groupId);
         
-        if (members.isEmpty()) {
-            groupMembers.remove(groupId);
+        if (active == null) return;
+
+        active.remove(user);
+        if (invited != null) {
+            invited.remove(user);
+        }
+        
+        if (active.isEmpty()) {
+            groupActive.remove(groupId);
+            groupInvited.remove(groupId);
+            activeGroups.remove(groupId);
             System.out.println("[SERVER] Grupo vacio eliminado: " + groupId);
+            notifyGroupEnded(groupId);
         } else {
             notifyGroupUpdated(groupId);
             System.out.println("[SERVER] " + user + " salio de " + groupId);
+        }
+    }
+
+    private void notifyGroupEnded(String groupId) {
+        for (Map.Entry<String, ObserverPrx> entry : observers.entrySet()) {
+            try {
+                entry.getValue().groupCallEndedAsync(groupId);
+            } catch (Exception ignored) {}
         }
     }
 
@@ -283,22 +327,36 @@ public class SubjectImpl implements Subject {
     public void sendAudioGroup(String groupId, String fromUser, byte[] data, Current current) {
         if (groupId == null || fromUser == null || data == null || data.length == 0) return;
 
-        Set<String> members = groupMembers.get(groupId);
-        if (members == null || members.isEmpty()) {
-            System.err.println("[SERVER] Grupo vacio o inexistente: " + groupId);
+        Set<String> active = groupActive.get(groupId);
+        if (active == null || active.isEmpty()) {
+            System.err.println("[SERVER] Grupo sin miembros activos: " + groupId);
+            return;
+        }
+        
+        if (!Boolean.TRUE.equals(activeGroups.get(groupId))) {
+            System.err.println("[SERVER] Grupo inactivo: " + groupId);
+            return;
+        }
+
+        if (!active.contains(fromUser)) {
+            System.err.println("[SERVER] Usuario " + fromUser + " no esta activo en el grupo " + groupId);
             return;
         }
 
         lastSeen.put(fromUser, System.currentTimeMillis());
 
-        String[] snapshot = members.toArray(new String[0]);
+        String[] snapshot = active.toArray(new String[0]);
         for (String member : snapshot) {
             if (member.equals(fromUser)) continue;
             
             ObserverPrx prx = observers.get(member);
             if (prx != null) {
                 try {
-                    prx.receiveAudioAsync(data);
+                    prx.receiveAudioAsync(data).whenComplete((result, ex) -> {
+                        if (ex != null) {
+                            System.err.println("[SERVER] Error enviando audio grupal a " + member + ": " + ex.getMessage());
+                        }
+                    });
                 } catch (Exception ex) {
                     System.err.println("[SERVER] Error enviando audio grupal a " + member);
                 }
@@ -310,21 +368,24 @@ public class SubjectImpl implements Subject {
     public void sendAudioMessageGroup(String fromUser, String groupId, byte[] data, Current current) {
         if (groupId == null || fromUser == null || data == null || data.length == 0) return;
 
-        Set<String> members = groupMembers.get(groupId);
-        if (members == null || members.isEmpty()) {
-            System.err.println("[SERVER] Grupo vacio: " + groupId);
+        Set<String> active = groupActive.get(groupId);
+        if (active == null || active.isEmpty()) {
+            System.err.println("[SERVER] Grupo sin miembros activos: " + groupId);
             return;
         }
 
-        String[] snapshot = members.toArray(new String[0]);
+        String[] snapshot = active.toArray(new String[0]);
         for (String member : snapshot) {
             if (member.equals(fromUser)) continue;
             
             ObserverPrx prx = observers.get(member);
             if (prx != null) {
                 try {
-                    // ✅ CORREGIDO: Quitar "Async"
-                    prx.receiveAudioMessageGroup(groupId, data);
+                    prx.receiveAudioMessageGroupAsync(groupId, data).whenComplete((result, ex) -> {
+                        if (ex != null) {
+                            System.err.println("[SERVER] Error enviando mensaje de audio grupal a " + member + ": " + ex.getMessage());
+                        }
+                    });
                 } catch (Exception ex) {
                     System.err.println("[SERVER] Error enviando mensaje de audio grupal a " + member);
                 }
@@ -336,10 +397,10 @@ public class SubjectImpl implements Subject {
     }
 
     private void notifyGroupUpdated(String groupId) {
-        Set<String> members = groupMembers.get(groupId);
-        if (members == null) return;
+        Set<String> active = groupActive.get(groupId);
+        if (active == null) return;
         
-        String[] arr = members.toArray(new String[0]);
+        String[] arr = active.toArray(new String[0]);
         for (String member : arr) {
             ObserverPrx prx = observers.get(member);
             if (prx != null) {
@@ -352,20 +413,34 @@ public class SubjectImpl implements Subject {
 
     private void removeFromAllGroups(String userId) {
         List<String> groupsToUpdate = new ArrayList<>();
+        List<String> groupsToRemove = new ArrayList<>();
         
-        for (Map.Entry<String, Set<String>> entry : groupMembers.entrySet()) {
-            if (entry.getValue().remove(userId)) {
-                groupsToUpdate.add(entry.getKey());
+        for (String groupId : groupActive.keySet()) {
+            Set<String> active = groupActive.get(groupId);
+            Set<String> invited = groupInvited.get(groupId);
+            
+            boolean wasActive = active != null && active.remove(userId);
+            boolean wasInvited = invited != null && invited.remove(userId);
+            
+            if (wasActive || wasInvited) {
+                if (active == null || active.isEmpty()) {
+                    groupsToRemove.add(groupId);
+                } else {
+                    groupsToUpdate.add(groupId);
+                }
             }
         }
 
+        for (String gid : groupsToRemove) {
+            groupActive.remove(gid);
+            groupInvited.remove(gid);
+            activeGroups.remove(gid);
+            notifyGroupEnded(gid);
+            System.out.println("[SERVER] Grupo eliminado por desconexión: " + gid);
+        }
+
         for (String gid : groupsToUpdate) {
-            Set<String> members = groupMembers.get(gid);
-            if (members == null || members.isEmpty()) {
-                groupMembers.remove(gid);
-            } else {
-                notifyGroupUpdated(gid);
-            }
+            notifyGroupUpdated(gid);
         }
     }
 
@@ -406,5 +481,8 @@ public class SubjectImpl implements Subject {
 
     public void shutdown() {
         cleaner.shutdownNow();
+        groupActive.clear();
+        groupInvited.clear();
+        activeGroups.clear();
     }
 }
