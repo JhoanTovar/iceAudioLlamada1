@@ -27,3 +27,18 @@ tasks.register("runAudioServer", JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
     mainClass = 'server.AudioServer'
 }
+
+tasks.register('fatJar', Jar) {
+    archiveBaseName = 'audio-server'
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    
+    manifest {
+        attributes 'Main-Class': 'server.AudioServer'
+    }
+    
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    
+    with jar
+}

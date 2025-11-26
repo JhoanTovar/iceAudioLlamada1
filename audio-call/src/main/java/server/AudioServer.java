@@ -14,7 +14,7 @@ public class AudioServer {
             // Adapter que atiende WebSocket en el puerto 9099 (ws)
             ObjectAdapter adapter =
                 communicator.createObjectAdapterWithEndpoints("AudioAdapter",
-                        "ws -h localhost -p 9099");
+                        "ws -h 0.0.0.0 -p 9099");
 
             SubjectImpl impl = new SubjectImpl();
 

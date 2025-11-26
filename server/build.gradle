@@ -27,3 +27,18 @@ tasks.register("runServer", JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
     mainClass = 'chat.server.TcpChatServer'
 }
+
+tasks.register('fatJar', Jar) {
+    archiveBaseName = 'chat-server'
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    
+    manifest {
+        attributes 'Main-Class': 'chat.server.TcpChatServer'
+    }
+    
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    
+    with jar
+}
