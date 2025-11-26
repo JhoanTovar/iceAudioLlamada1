@@ -88,7 +88,6 @@ class AudioManager {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
-          sampleRate: this.SAMPLE_RATE,
         },
       })
 
@@ -184,7 +183,6 @@ class AudioManager {
             echoCancellation: true,
             noiseSuppression: true,
             autoGainControl: true,
-            sampleRate: this.SAMPLE_RATE,
           },
         })
       }
