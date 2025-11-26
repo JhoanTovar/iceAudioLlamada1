@@ -37,49 +37,49 @@ class IceDelegate {
     this.name = name;
     
     if (this.subject) {
-      console.log("⚠️ IceDelegate ya estaba inicializado");
+      console.log(" IceDelegate ya estaba inicializado");
       return true;
     }
 
     try {
-      console.log("🔌 Inicializando Ice.Communicator...");
+      console.log(" Inicializando Ice.Communicator...");
       this.communicator = Ice.initialize();
       
-      console.log("🔍 Conectando al proxy...");
+      console.log(" Conectando al proxy...");
       const proxy = this.communicator.stringToProxy(
         `AudioService:ws -h localhost -p 9099`
       );
 
-      console.log("✨ Casteando a SubjectPrx...");
+      console.log(" Casteando a SubjectPrx...");
       this.subject = await Demo.SubjectPrx.checkedCast(proxy);
       
       if (!this.subject) {
-        console.error("❌ No pude castear SubjectPrx");
+        console.error(" No pude castear SubjectPrx");
         return false;
       }
 
-      console.log("📡 Creando adapter...");
+      console.log(" Creando adapter...");
       const adapter = await this.communicator.createObjectAdapter("");
       await adapter.activate();
 
       const conn = this.subject.ice_getCachedConnection();
       conn.setAdapter(adapter);
 
-      console.log("👤 Creando subscriber...");
+      console.log(" Creando subscriber...");
       this.subscriber = new Subscriber(this);
 
       const callbackPrx = Demo.ObserverPrx.uncheckedCast(
         adapter.addWithUUID(this.subscriber)
       );
 
-      console.log("📝 Registrando con el servidor...");
+      console.log("Registrando con el servidor...");
       await this.subject.attach(this.name, callbackPrx);
 
       this.isInitialized = true;
-      console.log("✅ ICE Delegate listo como:", this.name);
+      console.log("ICE Delegate listo como:", this.name);
       return true;
     } catch (error) {
-      console.error("❌ Error inicializando IceDelegate:", error);
+      console.error(" Error inicializando IceDelegate:", error);
       return false;
     }
   }
@@ -90,7 +90,7 @@ class IceDelegate {
   startHeartbeat() {
     this.heartbeatInterval = setInterval(async () => {
       if (!this.subject) {
-        console.warn("⚠️ Conexión ICE perdida");
+        console.warn(" Conexión ICE perdida");
         this.reconnect();
         return;
       }
@@ -98,14 +98,14 @@ class IceDelegate {
       try {
         await this.subject.ice_ping();
       } catch (error) {
-        console.error("❌ Heartbeat falló:", error);
+        console.error(" Heartbeat falló:", error);
         this.reconnect();
       }
     }, 5000);
   }
 
   async reconnect() {
-    console.log("🔄 Intentando reconectar...");
+    console.log(" Intentando reconectar...");
     clearInterval(this.heartbeatInterval);
 
     this.isInitialized = false;
@@ -113,7 +113,7 @@ class IceDelegate {
 
     const ok = await this.init(this.name);
     if (ok) {
-      console.log("✅ Reconexión exitosa");
+      console.log(" Reconexión exitosa");
       if (window.AppController) window.AppController.setupICECallbacks();
     }
   }
@@ -135,16 +135,16 @@ class IceDelegate {
   // ============================================================
   async startCall(target) {
     if (!this.subject) {
-      console.error("❌ No hay conexión ICE");
+      console.error(" No hay conexión ICE");
       return false;
     }
     try {
-      console.log(`[ICE] 📞 Iniciando llamada a: ${target}`);
+      console.log(`[ICE] Iniciando llamada a: ${target}`);
       await this.subject.startCall(this.name, target);
       this.currentCall = target;
       return true;
     } catch (error) {
-      console.error("❌ Error iniciando llamada:", error);
+      console.error(" Error iniciando llamada:", error);
       return false;
     }
   }
@@ -152,12 +152,12 @@ class IceDelegate {
   async acceptCall(fromUser) {
     if (!this.subject) return false;
     try {
-      console.log(`[ICE] ✅ Aceptando llamada de: ${fromUser}`);
+      console.log(`[ICE] Aceptando llamada de: ${fromUser}`);
       await this.subject.acceptCall(fromUser, this.name);
       this.currentCall = fromUser;
       return true;
     } catch (error) {
-      console.error("❌ Error aceptando llamada:", error);
+      console.error(" Error aceptando llamada:", error);
       return false;
     }
   }
@@ -165,11 +165,11 @@ class IceDelegate {
   async rejectCall(fromUser) {
     if (!this.subject) return false;
     try {
-      console.log(`[ICE] ❌ Rechazando llamada de: ${fromUser}`);
+      console.log(`[ICE] Rechazando llamada de: ${fromUser}`);
       await this.subject.rejectCall(fromUser, this.name);
       return true;
     } catch (error) {
-      console.error("❌ Error rechazando llamada:", error);
+      console.error(" Error rechazando llamada:", error);
       return false;
     }
   }
@@ -177,12 +177,12 @@ class IceDelegate {
   async colgar(target) {
     if (!this.subject) return false;
     try {
-      console.log(`[ICE] 📴 Colgando con: ${target}`);
+      console.log(`[ICE] Colgando con: ${target}`);
       await this.subject.colgar(this.name, target);
       if (this.currentCall === target) this.currentCall = null;
       return true;
     } catch (error) {
-      console.error("❌ Error colgando:", error);
+      console.error(" Error colgando:", error);
       return false;
     }
   }
@@ -192,7 +192,7 @@ class IceDelegate {
   // ============================================================
   async sendAudio(byteArray) {
     if (!this.subject) {
-      console.error("❌ No hay subject");
+      console.error(" No hay subject");
       return false;
     }
     try {
@@ -200,7 +200,7 @@ class IceDelegate {
       await this.subject.sendAudio(this.name, data);
       return true;
     } catch (error) {
-      console.error("❌ Error enviando audio:", error);
+      console.error(" Error enviando audio:", error);
       return false;
     }
   }
@@ -210,16 +210,16 @@ class IceDelegate {
   // ============================================================
   async sendAudioMessage(targetUser, byteArray) {
     if (!this.subject) {
-      console.error("❌ No hay subject");
+      console.error(" No hay subject");
       return false;
     }
     try {
       const data = Uint8Array.from(byteArray);
-      console.log(`[ICE] 📨 Enviando mensaje de audio a: ${targetUser}, bytes: ${data.length}`);
+      console.log(`[ICE] Enviando mensaje de audio a: ${targetUser}, bytes: ${data.length}`);
       await this.subject.sendAudioMessage(this.name, targetUser, data);
       return true;
     } catch (error) {
-      console.error("❌ Error enviando mensaje de audio:", error);
+      console.error(" Error enviando mensaje de audio:", error);
       return false;
     }
   }
@@ -229,7 +229,7 @@ class IceDelegate {
   // ============================================================
   async createGroupCall(users) {
     if (!this.subject) {
-        console.error("❌ No hay subject");
+        console.error("No hay subject");
         return false;
     }
 
@@ -237,19 +237,19 @@ class IceDelegate {
         // Filtrar al iniciador de la lista de invitados
         const otherUsers = users.filter(u => u !== this.name);
 
-        console.log(`[ICE] 📢 Creando llamada grupal con usuarios:`, otherUsers);
+        console.log(`[ICE] Creando llamada grupal con usuarios:`, otherUsers);
 
         // Crear la llamada en el servidor
         const groupId = await this.subject.createGroupCall(this.name, otherUsers);
 
-        console.log(`[ICE] ✅ Llamada grupal creada con ID: ${groupId}`);
+        console.log(`[ICE] Llamada grupal creada con ID: ${groupId}`);
 
         // El iniciador se une automáticamente
         await this.joinGroupCall(groupId);
 
         return groupId;
     } catch (error) {
-        console.error("❌ Error creando llamada grupal:", error);
+        console.error(" Error creando llamada grupal:", error);
         return false;
     }
 }
@@ -259,7 +259,7 @@ class IceDelegate {
     if (!this.subject) return false;
 
     try {
-        console.log(`[ICE] 👥 Uniéndose al grupo: ${groupId}`);
+        console.log(`[ICE] Uniéndose al grupo: ${groupId}`);
 
         // Unirse al grupo de llamada
         await this.subject.joinGroupCall(groupId, this.name);
@@ -276,7 +276,7 @@ class IceDelegate {
 
         return true;
     } catch (error) {
-        console.error("❌ Error uniéndose a llamada grupal:", error);
+        console.error("Error uniéndose a llamada grupal:", error);
         return false;
     }
 }
@@ -284,11 +284,11 @@ class IceDelegate {
   async leaveGroupCall(groupId) {
     if (!this.subject) return false;
     try {
-      console.log(`[ICE] 👋 Saliendo del grupo: ${groupId}`);
+      console.log(`[ICE] Saliendo del grupo: ${groupId}`);
       await this.subject.leaveGroupCall(groupId, this.name);
       return true;
     } catch (error) {
-      console.error("❌ Error saliendo de llamada grupal:", error);
+      console.error(" Error saliendo de llamada grupal:", error);
       return false;
     }
   }
@@ -298,7 +298,7 @@ class IceDelegate {
   // ============================================================
   async sendAudioGroup(groupId, byteArray) {
     if (!this.subject) {
-      console.error("❌ No hay subject");
+      console.error(" No hay subject");
       return false;
     }
     try {
@@ -306,7 +306,7 @@ class IceDelegate {
       await this.subject.sendAudioGroup(groupId, this.name, data);
       return true;
     } catch (error) {
-      console.error("❌ Error enviando audio grupal:", error);
+      console.error(" Error enviando audio grupal:", error);
       return false;
     }
   }
@@ -418,8 +418,8 @@ class IceDelegate {
 
 // Crear instancia global
 if (typeof window !== "undefined") {
-  console.log("✅ Creando instancia global de IceDelegate");
+  console.log(" Creando instancia global de IceDelegate");
   window.IceDelegate = new IceDelegate();
 } else {
-  console.error("❌ Window no está definido");
+  console.error(" Window no está definido");
 }

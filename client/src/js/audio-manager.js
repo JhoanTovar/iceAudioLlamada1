@@ -44,9 +44,12 @@ class AudioManager {
       }
 
       if (!this.audioContext) {
-        this.audioContext = new (window.AudioContext || window.webkitAudioContext)({
-          sampleRate: this.SAMPLE_RATE,
-        })
+        //No forzar sampleRate, dejar que el dispositivo use su frecuencia nativa
+        this.audioContext = new (window.AudioContext || window.webkitAudioContext)()
+        
+        //Guardar el sampleRate detectado automáticamente
+        this.SAMPLE_RATE = this.audioContext.sampleRate
+        console.log(`[AudioManager] Usando frecuencia nativa del dispositivo: ${this.SAMPLE_RATE} Hz`)
       }
 
       if (this.audioContext.state === "suspended") {
@@ -479,21 +482,21 @@ class AudioManager {
   }
 
   async playAudio(byteArray) {
-    console.log(`🎯 [DEBUG] AUDIOMANAGER.PLAYAUDIO EJECUTADO`)
-    console.log(`🎯 [DEBUG] Bytes recibidos: ${byteArray?.length || 0}`)
+    console.log(`[DEBUG] AUDIOMANAGER.PLAYAUDIO EJECUTADO`)
+    console.log(`[DEBUG] Bytes recibidos: ${byteArray?.length || 0}`)
 
     if (!byteArray || byteArray.length === 0) {
-      console.error(`❌ [DEBUG] No hay bytes para reproducir`)
+      console.error(` [DEBUG] No hay bytes para reproducir`)
       return
     }
 
     const ready = await this.ensureAudioContextReady()
     if (!ready) {
-      console.error(`❌ [DEBUG] No se pudo preparar AudioContext`)
+      console.error(`[DEBUG] No se pudo preparar AudioContext`)
       return
     }
 
-    console.log(`🎯 [DEBUG] AudioContext estado: ${this.audioContext.state}`)
+    console.log(`[DEBUG] AudioContext estado: ${this.audioContext.state}`)
 
     const floatArray = this.convertPCM16ToFloat32(byteArray)
     this.bufferQueue.push(floatArray)

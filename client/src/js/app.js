@@ -7,7 +7,7 @@ const AppController = {
   isRecordingAudioMessage: false,
 
   async init() {
-    console.log("🚀 Initializing chat application...")
+    console.log("------ Initializing chat application... ------")
 
     await this.waitForIceDelegate()
 
@@ -21,7 +21,7 @@ const AppController = {
     this.setupAudioListeners()
     this.setupICECallbacks()
 
-    console.log("✅ Application initialized")
+    console.log(" Application initialized ")
   },
 
   async waitForIceDelegate() {
@@ -32,10 +32,10 @@ const AppController = {
     }
 
     if (!window.IceDelegate) {
-      console.error("❌ IceDelegate no se pudo cargar")
+      console.error("IceDelegate no se pudo cargar")
       alert("Error: No se pudo cargar el sistema de llamadas ICE")
     } else {
-      console.log("✅ IceDelegate cargado correctamente")
+      console.log(" IceDelegate cargado correctamente")
       this.iceReady = true
     }
   },
@@ -44,17 +44,17 @@ const AppController = {
     if (window.IceDelegate && window.AudioManager) {
       // Suscripción para audios individuales
       window.IceDelegate.subscribe((bytes) => {
-        console.log("📢 [ICE] Audio individual recibido, bytes:", bytes.length);
+        console.log(" [ICE] Audio individual recibido, bytes:", bytes.length);
         window.AudioManager.playAudio(bytes);
       });
 
-      // ✅ NUEVA: Suscripción para audios grupales
-      // Necesitas saber a qué grupos perteneces - esto se puede hacer dinámicamente
+      // Suscripción para audios grupales
+  
       window.getCurrentGroupId = () => {
         return window.UI.currentGroup ? `group_${window.UI.currentGroup.id}` : null;
       };
 
-      console.log("✅ ICE conectado con AudioManager");
+      console.log("ICE conectado con AudioManager");
     }
   },
 
@@ -62,7 +62,7 @@ const AppController = {
   subscribeToGroup(groupId) {
     const iceGroupId = `group_${groupId}`;
     if (window.IceDelegate && window.AudioManager) {
-      console.log(`📢 [ICE] Suscribiéndose a grupo: ${iceGroupId}`);
+      console.log(` [ICE] Suscribiéndose a grupo: ${iceGroupId}`);
       
       window.IceDelegate.subscribeGroup(iceGroupId, (bytes) => {
         console.log(`📢 [ICE] Audio grupal recibido del grupo ${iceGroupId}, bytes:`, bytes.length);
@@ -77,7 +77,7 @@ const AppController = {
   unsubscribeFromGroup(groupId) {
     const iceGroupId = `group_${groupId}`;
     if (window.IceDelegate) {
-      console.log(`📢 [ICE] Cancelando suscripción a grupo: ${iceGroupId}`);
+      console.log(` [ICE] Cancelando suscripción a grupo: ${iceGroupId}`);
       // IceDelegate no tiene método unsubscribeGroup, pero podemos limpiar callbacks
       if (window.IceDelegate.groupCallbacks.has(iceGroupId)) {
         window.IceDelegate.groupCallbacks.delete(iceGroupId);
@@ -89,13 +89,13 @@ const AppController = {
 
   setupICECallbacks() {
     if (!window.IceDelegate) {
-      console.error("❌ IceDelegate no disponible para callbacks")
+      console.error("IceDelegate no disponible para callbacks")
       return
     }
 
     // Llamada entrante individual
     window.IceDelegate.onIncomingCall((fromUser) => {
-      console.log("📞 Llamada individual entrante de:", fromUser)
+      console.log(" Llamada individual entrante de:", fromUser)
 
       if (window.AudioManager) {
         window.AudioManager.currentCall = {
@@ -113,7 +113,7 @@ const AppController = {
 
     // Llamada aceptada
     window.IceDelegate.onCallAccepted(async (byUser) => {
-      console.log("✅ Llamada aceptada por:", byUser)
+      console.log("Llamada aceptada por:", byUser)
 
       if (window.AudioManager) {
         window.AudioManager.currentCall = {
@@ -133,7 +133,7 @@ const AppController = {
 
     // Llamada rechazada
     window.IceDelegate.onCallRejected((byUser) => {
-      console.log("❌ Llamada rechazada por:", byUser)
+      console.log("Llamada rechazada por:", byUser)
 
       if (window.AudioManager) {
         window.AudioManager.stopLiveRecording()
@@ -148,7 +148,7 @@ const AppController = {
 
     // Llamada colgada
     window.IceDelegate.onCallEnded((byUser) => {
-      console.log("📴 Llamada colgada por:", byUser)
+      console.log(" Llamada colgada por:", byUser)
       this.cleanupCall()
       alert(`La llamada fue terminada por ${byUser}`)
     })
@@ -159,7 +159,7 @@ const AppController = {
 
     // Llamada grupal entrante
     window.IceDelegate.onIncomingGroupCall((groupId, fromUser, members) => {
-      console.log("📞 Llamada grupal entrante:", groupId, "de:", fromUser)
+      console.log("Llamada grupal entrante:", groupId, "de:", fromUser)
 
       if (window.AudioManager) {
         window.AudioManager.currentCall = {
@@ -179,18 +179,18 @@ const AppController = {
 
     // Llamada grupal actualizada
     window.IceDelegate.onGroupUpdated((groupId, members) => {
-      console.log("🔄 Grupo actualizado:", groupId, members)
+      console.log("Grupo actualizado:", groupId, members)
       window.UI.updateGroupCallMembers(members)
     })
 
     // Llamada grupal terminada
     window.IceDelegate.onGroupEnded((groupId) => {
-      console.log("🛑 Llamada grupal terminada:", groupId)
+      console.log("Llamada grupal terminada:", groupId)
       this.cleanupCall()
       alert("La llamada grupal ha terminado")
     })
 
-    console.log("✅ ICE callbacks configurados")
+    console.log(" ICE callbacks configurados")
   },
 
   setupLoginListeners() {
@@ -319,14 +319,14 @@ async handleStopRecording() {
 
         // 1. Enviar audio por ICE (en tiempo real)
         success = await window.IceDelegate.sendAudioMessage(user.username, audioData.pcm16)
-        console.log("✅ Mensaje de audio individual enviado por ICE a:", user.username)
+        console.log("Mensaje de audio individual enviado por ICE a:", user.username)
 
         // 2. NUEVO: Guardar en backend para persistencia
         try {
           await window.API.saveAudioMessage(chat.id, audioData.duration)
-          console.log("✅ Audio guardado en backend")
+          console.log("Audio guardado en backend")
         } catch (err) {
-          console.error("❌ Error guardando audio en backend:", err)
+          console.error("Error guardando audio en backend:", err)
         }
 
         // 3. Mostrar en UI inmediatamente
@@ -342,7 +342,7 @@ async handleStopRecording() {
 
         // 4. Recargar historial para sincronizar
         setTimeout(async () => {
-        await this.loadMessages("group", chat.id)  // ✅ CORREGIDO - usa "this"
+        await this.loadMessages("group", chat.id)  //  CORREGIDO - usa "this"
       }, 500)
 
       } else if (chat.type === "group") {
@@ -358,7 +358,7 @@ async handleStopRecording() {
           // Normalizar ID (puede venir como objeto o número)
           const id = typeof memberId === 'object' ? memberId.id : memberId;
           
-          console.log(`🔍 Buscando miembro con ID: ${id}`);
+          console.log(` Buscando miembro con ID: ${id}`);
           const user = window.UI.allUsers.find(u => u.id === id);
           
           if (!user) {
@@ -381,14 +381,14 @@ async handleStopRecording() {
         iceGroupId,
         audioData.pcm16
          );
-        console.log("✅ Mensaje de audio grupal enviado por ICE a:", iceGroupId)
+        console.log("Mensaje de audio grupal enviado por ICE a:", iceGroupId)
 
         // 2. NUEVO: Guardar en backend para persistencia
         try {
           await window.API.saveGroupAudioMessage(chat.id, audioData.duration)
-          console.log("✅ Audio grupal guardado en backend")
+          console.log("Audio grupal guardado en backend")
         } catch (err) {
-          console.error("❌ Error guardando audio grupal en backend:", err)
+          console.error("Error guardando audio grupal en backend:", err)
         }
 
         // 3. Mostrar en UI inmediatamente
@@ -426,7 +426,7 @@ async handleStopRecording() {
     window.AudioManager.cancelRecordingMessage()
     window.UI.hideRecordingModal()
 
-    console.log("❌ Grabación cancelada")
+    console.log("Grabación cancelada")
   },
 
   async handleInitiateCall() {
@@ -457,7 +457,7 @@ async handleStopRecording() {
           }
 
           window.UI.showActiveCallModal(user.username, false)
-          console.log("✅ Llamada individual iniciada con:", user.username)
+          console.log("Llamada individual iniciada con:", user.username)
         } else {
           alert("No se pudo iniciar la llamada")
         }
@@ -488,7 +488,7 @@ async handleStopRecording() {
 
           await window.AudioManager.startLiveRecording()
           window.UI.showActiveCallModal(group.name || "Grupo", true, memberUsernames)
-          console.log("✅ Llamada grupal iniciada:", groupId)
+          console.log("Llamada grupal iniciada:", groupId)
         } else {
           alert("No se pudo iniciar la llamada grupal")
         }
@@ -511,7 +511,7 @@ async handleStopRecording() {
     }
 
     window.UI.hideIncomingCallModal()
-    console.log("❌ Llamada rechazada")
+    console.log("Llamada rechazada")
   },
 
   async handleAnswerCall() {
@@ -532,7 +532,7 @@ async handleStopRecording() {
           window.UI.hideIncomingCallModal()
           window.UI.showActiveCallModal(call.callerName, true, call.members)
           this.startCallDurationTimer()
-          console.log("✅ Llamada grupal respondida")
+          console.log("Llamada grupal respondida")
         }
       } else {
         success = await window.AudioManager.answerCall(call.callerId)
@@ -541,7 +541,7 @@ async handleStopRecording() {
           window.UI.hideIncomingCallModal()
           window.UI.showActiveCallModal(call.callerName, false)
           this.startCallDurationTimer()
-          console.log("✅ Llamada individual respondida")
+          console.log("Llamada individual respondida")
         }
       }
 
@@ -566,12 +566,12 @@ async handleStopRecording() {
     // Guardar en backend
     try {
       await window.API.endCall()
-      console.log("✅ Llamada registrada en backend")
+      console.log("Llamada registrada en backend")
     } catch (error) {
-      console.error("❌ Error registrando llamada en backend:", error)
+      console.error("Error registrando llamada en backend:", error)
     }
 
-    console.log("📴 Llamada terminada")
+    console.log(" Llamada terminada")
   },
 
 
@@ -585,7 +585,7 @@ async handleStopRecording() {
       })
 
       window.UI.muteBtn.style.opacity = isMuted ? "1" : "0.5"
-      console.log(isMuted ? "🔊 Micrófono activado" : "🔇 Micrófono silenciado")
+      console.log(isMuted ? " Micrófono activado" : "Micrófono silenciado")
     }
   },
 
@@ -648,7 +648,7 @@ async handleStopRecording() {
         throw new Error("No se pudo conectar al servidor ICE")
       }
 
-      console.log("✅ Conectado al servidor ICE como:", username)
+      console.log("Conectado al servidor ICE como:", username)
 
       const result = await window.API.login(username)
 
@@ -658,7 +658,7 @@ async handleStopRecording() {
         throw new Error(result.error || "Error al iniciar sesión")
       }
     } catch (error) {
-      console.error("❌ Login error:", error)
+      console.error("Login error:", error)
       window.UI.showError(window.UI.loginError, error.message || "Error al iniciar sesión")
     } finally {
       window.UI.loginBtn.disabled = false
@@ -692,13 +692,13 @@ async handleStopRecording() {
       const result = await window.API.register(username)
 
       if (result.success) {
-        console.log("✅ Registration successful:", result.user.username)
+        console.log("Registration successful:", result.user.username)
         await this.onLoginSuccess()
       } else {
         throw new Error(result.error || "Error al registrarse")
       }
     } catch (error) {
-      console.error("❌ Registration error:", error)
+      console.error("Registration error:", error)
       window.UI.showError(window.UI.loginError, error.message || "Error al registrarse")
     } finally {
       window.UI.registerBtn.disabled = false
@@ -718,9 +718,9 @@ async handleStopRecording() {
     if (window.AudioManager) {
       const hasPermission = await window.AudioManager.initAudio()
       if (hasPermission) {
-        console.log("✅ AudioManager inicializado para reproducir audios entrantes")
+        console.log("AudioManager inicializado para reproducir audios entrantes")
       } else {
-        console.warn("❌ No se pudo inicializar AudioManager al iniciar sesión")
+        console.warn("No se pudo inicializar AudioManager al iniciar sesión")
       }
     }
   },
@@ -729,7 +729,7 @@ async handleStopRecording() {
   async handleLogout() {
     try {
       await window.API.logout()
-      console.log("✅ Logged out successfully")
+      console.log("Logged out successfully")
       window.UI.showLoginScreen()
     } catch (error) {
       console.error("Logout error:", error)
@@ -744,7 +744,7 @@ async handleStopRecording() {
       if (result.success) {
         const currentUser = window.API.getCurrentUser()
         window.UI.renderUsers(result.users, currentUser.id)
-        console.log("✅ Usuarios cargados:", window.UI.allUsers.length)
+        console.log("Usuarios cargados:", window.UI.allUsers.length)
       }
     } catch (error) {
       console.error("Error loading users:", error)
@@ -757,7 +757,7 @@ async handleStopRecording() {
 
       if (result.success) {
         window.UI.renderGroups(result.groups)
-        console.log("✅ Grupos cargados:", result.groups.length)
+        console.log("Grupos cargados:", result.groups.length)
       }
     } catch (error) {
       console.error("Error loading groups:", error)
@@ -779,7 +779,7 @@ async handleStopRecording() {
       const result = await window.API.createGroup(groupName)
 
       if (result.success) {
-        console.log("✅ Group created:", result.group.name)
+        console.log("Group created:", result.group.name)
         window.UI.closeModal()
         await this.loadGroups()
       }
@@ -934,7 +934,7 @@ async handleStopRecording() {
     window.UI.currentChatId = group.id
     window.UI.currentGroup = group
 
-    // ✅ NUEVO: Crear/Unirse al grupo en ICE
+    // NUEVO: Crear/Unirse al grupo en ICE
     try {
       const memberUsernames = (group.memberIds || group.members || [])
         .map((memberId) => {
@@ -943,15 +943,15 @@ async handleStopRecording() {
         })
         .filter((u) => u !== null)
 
-      console.log(`🎯 [ICE] Creando/Uniéndose al grupo ICE: group_${group.id}`)
-      console.log(`🎯 [ICE] Miembros:`, memberUsernames)
+      console.log(`[ICE] Creando/Uniéndose al grupo ICE: group_${group.id}`)
+      console.log(`[ICE] Miembros:`, memberUsernames)
 
       // Crear el grupo en ICE
       const iceGroupId = await window.IceDelegate.createGroupCall(memberUsernames)
-      console.log(`✅ [ICE] Grupo creado en ICE: ${iceGroupId}`)
+      console.log(`[ICE] Grupo creado en ICE: ${iceGroupId}`)
 
     } catch (error) {
-      console.error(`❌ [ICE] Error creando grupo ICE:`, error)
+      console.error(`[ICE] Error creando grupo ICE:`, error)
     }
 
     window.UI.welcomeScreen.style.display = "none"

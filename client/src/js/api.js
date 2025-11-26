@@ -323,47 +323,47 @@ async getHistory(userId) {
   },
 
     async saveAudioMessage(receiverId, duration) {
-    console.log("💾 Guardando mensaje de audio en backend:", { receiverId, duration })
+    console.log("Guardando mensaje de audio en backend:", { receiverId, duration })
     try {
       const result = await axiosInstance.post("/messages/send-audio", {
         sessionId,
         receiverId: parseInt(receiverId),
         duration: parseInt(duration)
       })
-      console.log("✅ Audio guardado:", result)
+      console.log("Audio guardado:", result)
       return result
     } catch (error) {
-      console.error("❌ Error guardando audio:", error)
+      console.error("Error guardando audio:", error)
       throw error
     }
   },
 
   async saveGroupAudioMessage(groupId, duration) {
-    console.log("💾 Guardando mensaje de audio grupal en backend:", { groupId, duration })
+    console.log("Guardando mensaje de audio grupal en backend:", { groupId, duration })
     try {
       const result = await axiosInstance.post("/messages/send-group-audio", {
         sessionId,
         groupId: parseInt(groupId),
         duration: parseInt(duration)
       })
-      console.log("✅ Audio grupal guardado:", result)
+      console.log("Audio grupal guardado:", result)
       return result
     } catch (error) {
-      console.error("❌ Error guardando audio grupal:", error)
+      console.error("Error guardando audio grupal:", error)
       throw error
     }
   },
 
   async endCall() {
-    console.log("📴 Notificando fin de llamada al backend")
+    console.log("Notificando fin de llamada al backend")
     try {
       const result = await axiosInstance.post("/calls/end", {
         sessionId
       })
-      console.log("✅ Llamada registrada en backend:", result)
+      console.log("Llamada registrada en backend:", result)
       return result
     } catch (error) {
-      console.error("❌ Error registrando llamada:", error)
+      console.error("Error registrando llamada:", error)
       throw error
     }
   },

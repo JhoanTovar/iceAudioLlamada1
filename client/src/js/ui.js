@@ -380,7 +380,7 @@ const UI = {
   },
 
   renderMessages(messages, currentUserId) {
-    console.log("[v0] renderMessages called with:", {
+    console.log("renderMessages called with:", {
       messageCount: messages ? messages.length : 0,
       currentUserId,
       messages: messages ? messages.slice(0, 3) : [],
@@ -397,18 +397,18 @@ const UI = {
     // VALIDACIÓN: Solo procesar objetos válidos
     const validMessages = messages.filter(msg => {
       if (typeof msg !== 'object' || msg === null) {
-        console.warn('[v0] Mensaje inválido (no es objeto):', msg)
+        console.warn('Mensaje inválido (no es objeto):', msg)
         return false
       }
       if (Array.isArray(msg)) {
-        console.warn('[v0] Mensaje inválido (es array):', msg)
+        console.warn('Mensaje inválido (es array):', msg)
         return false
       }
       return true
     })
 
     validMessages.forEach((msg, index) => {
-      console.log(`[v0] Processing message ${index}:`, msg)
+      console.log(`Processing message ${index}:`, msg)
       this.appendMessage(msg, currentUserId)
     })
 

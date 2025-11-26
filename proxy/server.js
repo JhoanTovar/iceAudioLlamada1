@@ -502,7 +502,7 @@ app.post("/api/messages/send-audio", async (req, res) => {
   try {
     const { sessionId, receiverId, duration } = req.body
 
-    console.log('📝 Recibiendo audio individual:', { sessionId, receiverId, duration })
+    console.log(' Recibiendo audio individual:', { sessionId, receiverId, duration })
 
     if (!sessionId) {
       return res.status(401).json({ success: false, error: "SessionId requerido" })
@@ -526,14 +526,14 @@ app.post("/api/messages/send-audio", async (req, res) => {
     const response = await sendCommand(connection.client, "SEND_AUDIO_MESSAGE", audioData)
 
     if (response.command === "SUCCESS") {
-      console.log('✅ Audio guardado exitosamente')
+      console.log(' Audio guardado exitosamente')
       res.json({ success: true })
     } else {
-      console.error('❌ Error del servidor:', response.error)
+      console.error(' Error del servidor:', response.error)
       res.status(400).json({ success: false, error: response.error })
     }
   } catch (err) {
-    console.error('❌ Error en send-audio:', err)
+    console.error(' Error en send-audio:', err)
     res.status(500).json({ success: false, error: err.message })
   }
 })
@@ -543,7 +543,7 @@ app.post("/api/messages/send-group-audio", async (req, res) => {
   try {
     const { sessionId, groupId, duration } = req.body
 
-    console.log('📝 Recibiendo audio grupal:', { sessionId, groupId, duration })
+    console.log(' Recibiendo audio grupal:', { sessionId, groupId, duration })
 
     if (!sessionId) {
       return res.status(401).json({ success: false, error: "SessionId requerido" })
@@ -567,14 +567,14 @@ app.post("/api/messages/send-group-audio", async (req, res) => {
     const response = await sendCommand(connection.client, "SEND_GROUP_AUDIO_MESSAGE", audioData)
 
     if (response.command === "SUCCESS") {
-      console.log('✅ Audio grupal guardado exitosamente')
+      console.log(' Audio grupal guardado exitosamente')
       res.json({ success: true })
     } else {
-      console.error('❌ Error del servidor:', response.error)
+      console.error(' Error del servidor:', response.error)
       res.status(400).json({ success: false, error: response.error })
     }
   } catch (err) {
-    console.error('❌ Error en send-group-audio:', err)
+    console.error('Error en send-group-audio:', err)
     res.status(500).json({ success: false, error: err.message })
   }
 })
@@ -599,14 +599,14 @@ app.post("/api/calls/end", async (req, res) => {
     const response = await sendCommand(connection.client, "CALL_END", connection.user.id.toString())
 
     if (response.command === "SUCCESS") {
-      console.log('✅ Llamada finalizada y guardada')
+      console.log('Llamada finalizada y guardada')
       res.json({ success: true })
     } else {
-      console.error('❌ Error finalizando llamada:', response.error)
+      console.error(' Error finalizando llamada:', response.error)
       res.status(400).json({ success: false, error: response.error })
     }
   } catch (err) {
-    console.error('❌ Error en calls/end:', err)
+    console.error(' Error en calls/end:', err)
     res.status(500).json({ success: false, error: err.message })
   }
 })
