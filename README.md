@@ -2,6 +2,7 @@
 ##  Integrantes  
 - **Jhoan Manuel Tovar Rendón** – A0408185  
 - **Juan Pablo Martínez Rosero** – A00407215  
+ - **Juan Felipe Sinisterra** – A00159604  
 
 ---
 
