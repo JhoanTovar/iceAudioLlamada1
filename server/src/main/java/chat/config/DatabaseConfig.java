@@ -19,9 +19,9 @@ public class DatabaseConfig {
         HikariConfig config = new HikariConfig();
 
         // Datos de conexión a la base PostgreSQL
-        config.setJdbcUrl("jdbc:postgresql://localhost:5432/chatF");
+        config.setJdbcUrl("jdbc:postgresql://localhost:5432/chatJJJ");
         config.setUsername("postgres");
-        config.setPassword("59121213");
+        config.setPassword("jhoanpost924");
         config.setDriverClassName("org.postgresql.Driver");
 
         // Configuración del pool de conexiones (HikariCP)
