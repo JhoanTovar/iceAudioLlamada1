@@ -1,4 +1,3 @@
-// ===================== ui.js (COMPLETO Y CORREGIDO - PARTE 1) =====================
 
 const UI = {
   // Screen elements

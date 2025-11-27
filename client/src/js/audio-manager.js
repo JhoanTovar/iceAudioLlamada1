@@ -1,4 +1,3 @@
-// ===================== audio-manager.js (COMPLETO Y CORREGIDO) =====================
 class AudioManager {
   constructor() {
     this.audioContext = null

@@ -1,6 +1,4 @@
 
-// ===================== Subscriber.js =====================
-
 class Subscriber extends Demo.Observer {
   constructor(delegate) {
     super();

@@ -1,7 +1,5 @@
 import Subscriber from "./subscriber.js";
 
-// ===================== IceDelegate.js (COMPLETO Y CORREGIDO) =====================
-
 class IceDelegate {
   constructor() {
     this.communicator = null;

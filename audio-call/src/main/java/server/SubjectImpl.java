@@ -503,9 +503,6 @@ public class SubjectImpl implements Subject {
                             + groupId + ": " + members.size() + " miembros");
 
         String[] arr = members.toArray(new String[0]);
-
-        // ✅ CRÍTICO: Usar método correcto según tu interfaz Observer
-        // Si no existe groupUsersUpdatedAsync, usa groupCallUpdatedAsync
         for (String member : arr) {
             ObserverPrx prx = observers.get(member);
             if (prx != null) {

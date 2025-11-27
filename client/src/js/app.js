@@ -1,4 +1,4 @@
-// ===================== app.js (COMPLETO Y CORREGIDO) =====================
+
 const AppController = {
   recordingStartTime: null,
   recordingInterval: null,

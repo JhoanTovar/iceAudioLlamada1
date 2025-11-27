@@ -13,7 +13,7 @@ public class AudioClient {
     public static void main(String[] args) throws java.lang.Exception {
         AudioFormat format = new AudioFormat(44100, 16, 1, true, true);
 
-        // Inicializamos el reproductor (debes tener PlayerThread implementado)
+        // Inicializamos el reproductor 
         PlayerThread playerThread = new PlayerThread(format);
         ObserverI.player = playerThread;
         playerThread.setPlay(true);
