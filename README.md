@@ -1,4 +1,3 @@
-
 #  Computación en Internet 1  
 ##  Integrantes  
 - **Jhoan Manuel Tovar Rendón** – A0408185  
@@ -21,13 +20,28 @@ Este proyecto implementa un sistema de mensajería y llamadas de audio utilizand
 
 ---
 
+# Instalación Inicial (primera vez)
+
+Antes de iniciar cualquier servidor debes instalar los módulos de Node.js:
+
+```bash
+1. cd proxy
+2. npm i
+3. cd ..
+4. cd client
+5. npm i
+````
+
+---
+
 # Cómo ejecutar el proyecto (modo desarrollo)
 
-### 1️. Iniciar el servidor Proxy  
+### 1️. Iniciar el servidor Proxy
+
 ```bash
 cd proxy
 npm start
-````
+```
 
 El Proxy escucha en **puerto 3001**.
 
@@ -65,7 +79,11 @@ ws://0.0.0.0:9099
 
 ### 4️. Iniciar el cliente web
 
-Abrir `index.html` con Live Server o npx http-server, web serve. (servicios que permitan abrir un sevidor)
+Puedes abrir `index.html` con:
+
+* Live Server (VSCode)
+* `npx http-server`
+* Cualquier web server local
 
 ---
 
@@ -75,44 +93,45 @@ El proyecto utiliza un flujo distribuido entre varios componentes cliente–serv
 
 ---
 
-##  1. Comunicación de Mensajes (TCP)
+## 1. Comunicación de Mensajes (TCP)
 
 * El cliente envía **peticiones HTTP** al **Proxy**.
 * El Proxy convierte las peticiones **HTTP → TCP**.
 * El Proxy reenvía las peticiones al **Servidor TCP**, encargado de:
 
-  * recibir y procesar mensajes,
+  * procesar mensajes,
   * almacenar en base de datos,
   * despachar mensajes a usuarios correspondientes.
 
 ---
 
-##  2. Comunicación de Audio y Llamadas (ICE)
+## 2. Comunicación de Audio y Llamadas (ICE)
 
-El sistema emplea **ZeroC ICE** para comunicación RPC entre JavaScript y Java usando WebSockets (ws).
+El sistema emplea **ZeroC ICE** mediante WebSockets para realizar llamadas RPC entre JavaScript y Java.
 
 Permite:
 
 * llamadas individuales,
 * llamadas grupales,
-* mensajes de audio individuales y grupales.
+* mensajes de audio individuales,
+* mensajes de audio grupales.
 
 El cliente:
 
 1. Usa módulos JS generados por Slice.
-2. Se conecta al servidor ICE por WebSocket/RPC.
-3. Ejecuta métodos remotos compartidos entre JavaScript ↔ Java.
+2. Se conecta al servidor ICE vía WebSocket.
+3. Ejecuta métodos remotos compartidos Java ↔ JavaScript.
 
 ---
 
 ## Servidores y Puertos
 
-| Componente       | Puerto            | Descripción                                     |
-| ---------------- | ----------------- | ----------------------------------------------- |
-| Proxy HTTP → TCP | **3001**          | Convierte peticiones del cliente a mensajes TCP |
-| Servidor TCP     | **5000**          | Manejo de mensajes, base de datos               |
-| Servidor ICE     | **9099**          | Llamadas, grupos, audio                         |
-| Cliente Web      | **8080 (deploy)** | Interfaz para el usuario                        |
+| Componente       | Puerto            | Descripción                              |
+| ---------------- | ----------------- | ---------------------------------------- |
+| Proxy HTTP → TCP | **3001**          | Convierte peticiones HTTP a mensajes TCP |
+| Servidor TCP     | **5000**          | Manejo de mensajes y base de datos       |
+| Servidor ICE     | **9099**          | Llamadas, grupos, audio                  |
+| Cliente Web      | **8080 (deploy)** | Interfaz web                             |
 
 ---
 
@@ -123,17 +142,17 @@ El cliente:
 1. Abrir una terminal dentro de la carpeta `deploy/`
 2. Ejecutar:
 
-```
+```bash
 start-all-win.bat
 ```
 
-(o doble clic sobre el archivo `.bat`)
+(o doble clic en el archivo)
 
 Todos los servidores se iniciarán automáticamente.
 
 ---
 
-##  Linux
+## Linux
 
 ### 1. Dar permisos de ejecución
 
@@ -151,7 +170,7 @@ chmod +x start-all-linux.sh
 
 ---
 
-##  Obtener la IP del servidor
+## Obtener la IP del servidor
 
 ```bash
 ip addr show | grep "inet "
@@ -159,7 +178,7 @@ ip addr show | grep "inet "
 
 Anota tu **IPv4**.
 
-### Desde otro computador (cliente):
+### Acceso desde otro computador:
 
 ```
 http://TU_IP:8080
@@ -167,7 +186,7 @@ http://TU_IP:8080
 
 ---
 
-#  Listo para desplegar en Windows o Linux
+# Listo para desplegar en Windows o Linux
 
 El sistema queda disponible para navegación web y permite:
 
@@ -177,3 +196,4 @@ El sistema queda disponible para navegación web y permite:
 * llamadas grupales.
 
 ---
+
